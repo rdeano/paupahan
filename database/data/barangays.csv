@@ -1,0 +1,183 @@
+psgc_code,name,district
+1130700001,Acacia,Buhangin
+1130700002,Agdao,Agdao
+1130700003,Alambre,Toril
+1130700004,Atan-Awe,Toril
+1130700005,Bago Gallera,Talomo
+1130700006,Bago Oshiro,Tugbok
+1130700007,Baguio,Baguio
+1130700009,Balengaeng,Tugbok
+1130700010,Baliok,Talomo
+1130700012,Bangkas Heights,Toril
+1130700013,Baracatan,Toril
+1130700014,Bato,Toril
+1130700015,Bayabas,Toril
+1130700016,Biao Escuela,Tugbok
+1130700017,Biao Guianga,Tugbok
+1130700018,Biao Joaquin,Calinan
+1130700019,Binugao,Toril
+1130700020,Bucana,Talomo
+1130700021,Buhangin,Buhangin
+1130700022,Bunawan,Bunawan
+1130700023,Cabantian,Buhangin
+1130700024,Cadalian,Baguio
+1130700026,Calinan,Calinan
+1130700027,Callawa,Buhangin
+1130700028,Camansi,Toril
+1130700029,Carmen,Baguio
+1130700030,Catalunan Grande,Talomo
+1130700031,Catalunan Pequeño,Talomo
+1130700032,Catigan,Toril
+1130700033,Cawayan,Calinan
+1130700034,Colosas,Paquibato
+1130700035,Communal,Buhangin
+1130700036,Crossing Bayabas,Toril
+1130700037,Dacudao,Calinan
+1130700038,Dalag,Marilog
+1130700039,Dalagdag,Calinan
+1130700040,Daliao,Toril
+1130700041,Daliaon Plantation,Toril
+1130700042,Dominga,Calinan
+1130700043,Dumoy,Talomo
+1130700044,Eden,Toril
+1130700045,Fatima,Paquibato
+1130700047,Gatungan,Bunawan
+1130700048,Gumalang,Baguio
+1130700049,Ilang,Bunawan
+1130700050,Indangan,Buhangin
+1130700051,Kilate,Toril
+1130700052,Lacson,Calinan
+1130700053,Lamanan,Calinan
+1130700054,Lampianao,Calinan
+1130700055,Langub,Talomo
+1130700056,Alejandra Navarro,Bunawan
+1130700057,Lizada,Toril
+1130700058,Los Amigos,Tugbok
+1130700059,Lubogan,Toril
+1130700060,Lumiad,Paquibato
+1130700061,Ma-a,Talomo
+1130700062,Mabuhay,Paquibato
+1130700063,Magtuod,Talomo
+1130700064,Mahayag,Bunawan
+1130700065,Malabog,Paquibato
+1130700066,Malagos,Baguio
+1130700067,Malamba,Marilog
+1130700068,Manambulan,Tugbok
+1130700069,Mandug,Buhangin
+1130700070,Manuel Guianga,Tugbok
+1130700071,Mapula,Paquibato
+1130700072,Marapangi,Toril
+1130700073,Marilog,Marilog
+1130700074,Matina Aplaya,Talomo
+1130700075,Matina Crossing,Talomo
+1130700077,Matina Pangi,Talomo
+1130700078,Matina Biao,Tugbok
+1130700079,Mintal,Tugbok
+1130700080,Mudiang,Bunawan
+1130700081,Mulig,Toril
+1130700082,New Carmen,Tugbok
+1130700083,New Valencia,Tugbok
+1130700086,Pampanga,Buhangin
+1130700087,Panacan,Bunawan
+1130700088,Panalum,Paquibato
+1130700089,Pandaitan,Paquibato
+1130700090,Pangyan,Calinan
+1130700091,Paquibato,Paquibato
+1130700092,Paradise Embak,Paquibato
+1130700097,Riverside,Calinan
+1130700098,Salapawan,Paquibato
+1130700099,Salaysay,Marilog
+1130700100,San Isidro,Bunawan
+1130700101,Sasa,Buhangin
+1130700102,Sibulan,Toril
+1130700104,Sirawan,Toril
+1130700105,Sirib,Calinan
+1130700106,Suawan,Marilog
+1130700107,Subasta,Calinan
+1130700108,Sumimao,Paquibato
+1130700110,Tacunan,Tugbok
+1130700112,Tagakpan,Tugbok
+1130700113,Tagluno,Toril
+1130700114,Tagurano,Toril
+1130700115,Talandang,Tugbok
+1130700116,Talomo,Talomo
+1130700117,Talomo River,Calinan
+1130700118,Tamayong,Calinan
+1130700119,Tambobong,Baguio
+1130700120,Tamugan,Marilog
+1130700121,Tapak,Paquibato
+1130700122,Tawan-tawan,Baguio
+1130700123,Tibuloy,Toril
+1130700124,Tibungco,Bunawan
+1130700125,Tigatto,Buhangin
+1130700126,Toril,Toril
+1130700127,Tugbok,Tugbok
+1130700128,Tungakalan,Toril
+1130700129,Ula,Tugbok
+1130700131,Wangan,Calinan
+1130700133,Wines,Baguio
+1130700134,Barangay 1-A,Poblacion
+1130700135,Barangay 2-A,Poblacion
+1130700136,Barangay 3-A,Poblacion
+1130700137,Barangay 4-A,Poblacion
+1130700138,Barangay 5-A,Poblacion
+1130700139,Barangay 6-A,Poblacion
+1130700140,Barangay 7-A,Poblacion
+1130700141,Barangay 8-A,Poblacion
+1130700142,Barangay 9-A,Poblacion
+1130700143,Barangay 10-A,Poblacion
+1130700144,Barangay 11-B,Poblacion
+1130700145,Barangay 12-B,Poblacion
+1130700146,Barangay 13-B,Poblacion
+1130700147,Barangay 14-B,Poblacion
+1130700148,Barangay 15-B,Poblacion
+1130700149,Barangay 16-B,Poblacion
+1130700150,Barangay 17-B,Poblacion
+1130700151,Barangay 18-B,Poblacion
+1130700152,Barangay 19-B,Poblacion
+1130700153,Barangay 20-B,Poblacion
+1130700154,Barangay 21-C,Poblacion
+1130700155,Barangay 22-C,Poblacion
+1130700156,Barangay 23-C,Poblacion
+1130700157,Barangay 24-C,Poblacion
+1130700158,Barangay 25-C,Poblacion
+1130700159,Barangay 26-C,Poblacion
+1130700160,Barangay 27-C,Poblacion
+1130700161,Barangay 28-C,Poblacion
+1130700162,Barangay 29-C,Poblacion
+1130700163,Barangay 30-C,Poblacion
+1130700164,Barangay 31-D,Poblacion
+1130700165,Barangay 32-D,Poblacion
+1130700166,Barangay 33-D,Poblacion
+1130700167,Barangay 34-D,Poblacion
+1130700168,Barangay 35-D,Poblacion
+1130700169,Barangay 36-D,Poblacion
+1130700170,Barangay 37-D,Poblacion
+1130700171,Barangay 38-D,Poblacion
+1130700172,Barangay 39-D,Poblacion
+1130700173,Barangay 40-D,Poblacion
+1130700174,Angalan,Tugbok
+1130700175,Baganihan,Marilog
+1130700176,Bago Aplaya,Talomo
+1130700177,Bantol,Marilog
+1130700178,Buda,Marilog
+1130700179,Centro,Agdao
+1130700180,Datu Salumay,Marilog
+1130700181,Gov. Paciano Bangoy,Agdao
+1130700182,Gov. Vicente Duterte,Agdao
+1130700183,Gumitan,Marilog
+1130700184,Inayangan,Calinan
+1130700185,"Kap. Tomas Monteverde, Sr.",Agdao
+1130700186,Lapu-lapu,Agdao
+1130700187,"Leon Garcia, Sr.",Agdao
+1130700188,Magsaysay,Marilog
+1130700189,Megkawayan,Calinan
+1130700190,Rafael Castillo,Agdao
+1130700191,Saloy,Calinan
+1130700192,San Antonio,Agdao
+1130700193,Santo Niño,Tugbok
+1130700194,Ubalde,Agdao
+1130700195,Waan,Buhangin
+1130700196,Wilfredo Aquino,Agdao
+1130700197,Alfonso Angliongto Sr.,Buhangin
+1130700198,Vicente Hizon Sr.,Buhangin
