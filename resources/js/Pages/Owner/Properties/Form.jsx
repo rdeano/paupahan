@@ -7,11 +7,12 @@ import WorkspaceLayout from '../../../Layouts/WorkspaceLayout';
 import BarangayPicker from '../../../Components/BarangayPicker';
 import StreetPicker from '../../../Components/StreetPicker';
 import PhotoManager from '../../../Components/PhotoManager';
+import LocationPicker from '../../../Components/Map/LocationPicker';
 
 const BLANK = {
     title: '', type: 'apartment', description: '', price_monthly: '', deposit_months: 1, advance_months: 1,
     min_stay_months: '', bedrooms: 1, bathrooms: 1, floor_area_sqm: '', max_occupants: '',
-    barangay_id: null, street_id: null, new_street: '', house_number: '', landmark: '', house_rules: '',
+    barangay_id: null, street_id: null, new_street: '', house_number: '', landmark: '', latitude: null, longitude: null, house_rules: '',
     status: 'draft', available_from: '', amenities: [],
 };
 
@@ -27,14 +28,27 @@ function Section({ title, subtitle, children }) {
     );
 }
 
-export default function PropertyForm({ property, options, unverifiedLimit }) {
+const CONTACT_BLANK = { contact_name: '', contact_messenger: '', contact_phone: '' };
+
+/**
+ * Used by owners for their own listings, and by admins: posting a listing with its own contact
+ * details (adminListing), or editing a registered owner's listing (onBehalfOf).
+ */
+export default function PropertyForm({ property, options, unverifiedLimit, onBehalfOf = null, adminListing = false }) {
     const { auth } = usePage().props;
     const editing = Boolean(property);
+    const blank = adminListing ? { ...BLANK, ...CONTACT_BLANK } : BLANK;
     const form = useForm(
         editing
-            ? Object.fromEntries(Object.keys(BLANK).map((key) => [key, property[key] ?? BLANK[key]]))
-            : BLANK,
+            ? Object.fromEntries(Object.keys(blank).map((key) => [key, property[key] ?? blank[key]]))
+            : blank,
     );
+
+    // Admin listings belong to the (verified) admin, so they have no listing limit.
+    const ownerVerified = onBehalfOf?.verified ?? (adminListing || auth.user.verified);
+    const cancelUrl = onBehalfOf ? route('admin.owners.edit', onBehalfOf.id)
+        : adminListing ? route('admin.properties.index')
+            : route('owner.dashboard');
 
     const field = (name) => ({
         value: form.data[name] ?? '',
@@ -48,8 +62,15 @@ export default function PropertyForm({ property, options, unverifiedLimit }) {
 
     const submit = (event) => {
         event.preventDefault();
-        if (editing) form.put(route('owner.properties.update', property.slug), { preserveScroll: true });
-        else form.post(route('owner.properties.store'));
+        if (adminListing && !editing) {
+            form.post(route('admin.properties.store'));
+        } else if (adminListing || onBehalfOf) {
+            form.put(route('admin.properties.update', property.slug), { preserveScroll: true });
+        } else if (editing) {
+            form.put(route('owner.properties.update', property.slug), { preserveScroll: true });
+        } else {
+            form.post(route('owner.properties.store'));
+        }
     };
 
     const select = (name, label, items) => (
@@ -74,6 +95,14 @@ export default function PropertyForm({ property, options, unverifiedLimit }) {
                 {editing && <Button component={Link} href={route('listings.show', property.slug)}>View listing</Button>}
             </Stack>
 
+            {onBehalfOf && (
+                <Alert severity="info" sx={{ mb: 3 }}>
+                    You're editing this listing on behalf of{' '}
+                    <Link href={route('admin.owners.edit', onBehalfOf.id)}>{onBehalfOf.name}</Link>. It appears on the site as theirs.
+                    {!onBehalfOf.has_messenger && ' They have no Messenger link yet, so renters can\'t message them. Add it on their owner page.'}
+                </Alert>
+            )}
+
             <Stack spacing={3}>
                 {editing && (
                     <Section title="Photos">
@@ -82,6 +111,27 @@ export default function PropertyForm({ property, options, unverifiedLimit }) {
                 )}
 
                 <Stack component="form" spacing={3} onSubmit={submit}>
+                    {adminListing && (
+                        <Section title="Contact" subtitle={'Who renters message about this listing, usually the property owner. Shown on the listing with a "Posted by Admin" badge.'}>
+                            <Grid container spacing={2}>
+                                <Grid size={12}>
+                                    <TextField label="Name" placeholder="e.g. Aling Nena" required {...field('contact_name')} />
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 6 }}>
+                                    <TextField
+                                        label="Facebook Messenger"
+                                        placeholder="juan.delacruz or m.me/juan.delacruz"
+                                        {...field('contact_messenger')}
+                                        helperText={form.errors.contact_messenger ?? 'Their Facebook username or m.me link.'}
+                                    />
+                                </Grid>
+                                <Grid size={{ xs: 12, sm: 6 }}>
+                                    <TextField label="Mobile number (optional)" placeholder="09XX XXX XXXX" {...field('contact_phone')} />
+                                </Grid>
+                            </Grid>
+                        </Section>
+                    )}
+
                     <Section title="Basics">
                         <Grid container spacing={2}>
                             <Grid size={12}>
@@ -128,6 +178,14 @@ export default function PropertyForm({ property, options, unverifiedLimit }) {
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField label="House / unit number (private)" {...field('house_number')} />
                             </Grid>
+                            <Grid size={12}>
+                                <LocationPicker
+                                    latitude={form.data.latitude}
+                                    longitude={form.data.longitude}
+                                    onChange={(pin) => form.setData((d) => ({ ...d, ...pin }))}
+                                    error={form.errors.latitude || form.errors.longitude}
+                                />
+                            </Grid>
                         </Grid>
                     </Section>
 
@@ -159,7 +217,7 @@ export default function PropertyForm({ property, options, unverifiedLimit }) {
 
                     <Section
                         title="Availability"
-                        subtitle={`Draft listings are only visible to you. Available and Reserved listings appear in search.${auth.user.verified ? '' : ` Unverified accounts can have up to ${unverifiedLimit} public listings.`}`}
+                        subtitle={`Draft listings are only visible to you. Available and Reserved listings appear in search.${ownerVerified ? '' : ` Unverified accounts can have up to ${unverifiedLimit} public listings.`}`}
                     >
                         <Grid container spacing={2}>
                             <Grid size={{ xs: 12, sm: 6 }}>{select('status', 'Status', options.statuses)}</Grid>
@@ -172,7 +230,7 @@ export default function PropertyForm({ property, options, unverifiedLimit }) {
                     {hasErrors && <Alert severity="error">Please fix the highlighted fields.</Alert>}
 
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <Button component={Link} href={route('owner.dashboard')}>Cancel</Button>
+                        <Button component={Link} href={cancelUrl}>Cancel</Button>
                         <Button type="submit" variant="contained" size="large" disabled={form.processing}>
                             {editing ? 'Save changes' : 'Save and add photos'}
                         </Button>

@@ -39,9 +39,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', Admin\DashboardController::class)->name('dashboard');
 
     Route::get('/owners', [Admin\OwnerController::class, 'index'])->name('owners.index');
+    Route::get('/owners/create', [Admin\OwnerController::class, 'create'])->name('owners.create');
+    Route::post('/owners', [Admin\OwnerController::class, 'store'])->name('owners.store');
+    Route::get('/owners/{owner}/edit', [Admin\OwnerController::class, 'edit'])->name('owners.edit');
+    Route::put('/owners/{owner}', [Admin\OwnerController::class, 'update'])->name('owners.update');
     Route::patch('/owners/{owner}/status', [Admin\OwnerController::class, 'updateStatus'])->name('owners.status');
 
+    // Listings, including posting and editing on an owner's behalf. Photos use the owner workspace routes.
     Route::get('/properties', [Admin\PropertyController::class, 'index'])->name('properties.index');
+    Route::get('/properties/create', [Admin\PropertyController::class, 'create'])->name('properties.create');
+    Route::post('/properties', [Admin\PropertyController::class, 'store'])->name('properties.store');
+    Route::get('/properties/{property}/edit', [Admin\PropertyController::class, 'edit'])->name('properties.edit');
+    Route::put('/properties/{property}', [Admin\PropertyController::class, 'update'])->name('properties.update');
     Route::patch('/properties/{property}/unpublish', [Admin\PropertyController::class, 'unpublish'])->name('properties.unpublish');
     Route::delete('/properties/{property}', [Admin\PropertyController::class, 'destroy'])->name('properties.destroy');
 

@@ -3,15 +3,12 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Enums\PropertyStatus;
-use App\Enums\PropertyType;
+use App\Http\Controllers\Concerns\RendersPropertyForm;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PropertyRequest;
-use App\Models\Amenity;
 use App\Models\Property;
-use App\Models\PropertyPhoto;
 use App\Models\User;
 use App\Rules\WithinPublicListingLimit;
-use App\Support\AddressOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,6 +17,8 @@ use Inertia\Response;
 
 class PropertyController extends Controller
 {
+    use RendersPropertyForm;
+
     public function index(Request $request): Response|RedirectResponse
     {
         $owner = $request->user();
@@ -55,10 +54,7 @@ class PropertyController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('Owner/Properties/Form', [
-            'property' => null,
-            ...$this->formOptions(),
-        ]);
+        return Inertia::render('Owner/Properties/Form', $this->propertyFormProps());
     }
 
     public function store(PropertyRequest $request): RedirectResponse
@@ -70,29 +66,11 @@ class PropertyController extends Controller
             ->with('success', 'Property saved. Now add some photos.');
     }
 
-    public function edit(Request $request, Property $property): Response
+    public function edit(Property $property): Response
     {
         $this->authorize('update', $property);
 
-        $property->load(['photos', 'amenities', 'street']);
-
-        return Inertia::render('Owner/Properties/Form', [
-            'property' => [
-                ...$property->only([
-                    'id', 'slug', 'title', 'description', 'price_monthly', 'deposit_months', 'advance_months',
-                    'min_stay_months', 'bedrooms', 'bathrooms', 'floor_area_sqm', 'max_occupants',
-                    'barangay_id', 'street_id', 'house_number', 'landmark', 'house_rules',
-                ]),
-                'type' => $property->type->value,
-                'status' => $property->status->value,
-                'available_from' => $property->available_from?->toDateString(),
-                'street_name' => $property->street?->name,
-                'amenities' => $property->amenities->pluck('id'),
-                'photos' => $property->photos->map(fn (PropertyPhoto $photo) => $photo->toFrontend()),
-                'max_photos' => PropertyPhotoController::MAX_PHOTOS,
-            ],
-            ...$this->formOptions(),
-        ]);
+        return Inertia::render('Owner/Properties/Form', $this->propertyFormProps($property));
     }
 
     public function update(PropertyRequest $request, Property $property): RedirectResponse
@@ -108,7 +86,7 @@ class PropertyController extends Controller
         $this->authorize('update', $property);
 
         $property->update($request->validate([
-            'status' => ['required', Rule::enum(PropertyStatus::class), new WithinPublicListingLimit($request->user(), $property)],
+            'status' => ['required', Rule::enum(PropertyStatus::class), new WithinPublicListingLimit($property->owner, $property)],
         ]));
 
         return back()->with('success', 'Status updated.');
@@ -122,18 +100,5 @@ class PropertyController extends Controller
         $property->delete();
 
         return redirect()->route('owner.dashboard')->with('success', 'Property deleted.');
-    }
-
-    private function formOptions(): array
-    {
-        return [
-            'unverifiedLimit' => User::UNVERIFIED_PUBLIC_LISTING_LIMIT,
-            'options' => [
-                'districts' => AddressOptions::districts(),
-                'types' => PropertyType::options(),
-                'statuses' => PropertyStatus::options(),
-                'amenities' => Amenity::orderBy('name')->get(['id', 'name']),
-            ],
-        ];
     }
 }

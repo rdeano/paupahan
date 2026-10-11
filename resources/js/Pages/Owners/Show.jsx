@@ -16,7 +16,7 @@ export default function Show({ owner, listings }) {
                     <div style={{ flexGrow: 1 }}>
                         <Stack direction="row" spacing={1} alignItems="center">
                             <Typography variant="h2">{owner.name}</Typography>
-                            <VerifiedChip verified={owner.verified} />
+                            <VerifiedChip verified={owner.verified} addedByAdmin={owner.added_by_admin} />
                         </Stack>
                         {owner.member_since && <Typography color="text.secondary">Member since {owner.member_since}</Typography>}
                     </div>

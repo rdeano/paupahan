@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Property;
 use App\Models\User;
+use App\Support\Messenger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -41,6 +45,55 @@ class OwnerController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/OwnerForm', ['owner' => null]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $owner = User::onboardOwner($this->validatedProfile($request));
+
+        return redirect()->route('admin.owners.edit', $owner)
+            ->with('success', 'Owner added. Now add their first listing.');
+    }
+
+    public function edit(User $owner): Response
+    {
+        abort_if($owner->isAdmin(), 404);
+
+        return Inertia::render('Admin/OwnerForm', [
+            'owner' => [
+                ...$owner->only(['id', 'name', 'email', 'phone', 'show_phone', 'messenger_username']),
+                'messenger_url' => $owner->messengerUrl(),
+                'verified' => $owner->hasVerifiedEmail(),
+                'added_by_admin' => $owner->added_by_admin,
+                'can_log_in' => filled($owner->email),
+                'properties' => $owner->properties()->latest()->get()->map(fn (Property $property) => [
+                    'slug' => $property->slug,
+                    'title' => $property->title,
+                    'status_label' => $property->status->label(),
+                ]),
+            ],
+        ]);
+    }
+
+    public function update(Request $request, User $owner): RedirectResponse
+    {
+        abort_if($owner->isAdmin(), 404);
+
+        $data = $this->validatedProfile($request, $owner);
+
+        // An owner's login email is theirs to manage; an admin can only add one where none exists.
+        if (filled($owner->email)) {
+            unset($data['email']);
+        }
+
+        $owner->update($data);
+
+        return back()->with('success', 'Owner saved.');
+    }
+
     public function updateStatus(Request $request, User $owner): RedirectResponse
     {
         abort_if($owner->isAdmin(), 403);
@@ -49,5 +102,30 @@ class OwnerController extends Controller
         $owner->save();
 
         return back()->with('success', $owner->isActive() ? 'Owner reactivated.' : 'Owner suspended. Their listings are hidden.');
+    }
+
+    private function validatedProfile(Request $request, ?User $owner = null): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique(User::class)->ignore($owner)],
+            'phone' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+\-\s()]*$/'],
+            'show_phone' => ['boolean'],
+            'messenger_username' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $username = Messenger::normalize($data['messenger_username'] ?? null);
+
+        if (filled($data['messenger_username'] ?? null) && $username === null) {
+            throw ValidationException::withMessages([
+                'messenger_username' => 'Enter their Facebook username or an m.me link, e.g. m.me/juan.delacruz.',
+            ]);
+        }
+
+        return [
+            ...$data,
+            'email' => filled($data['email'] ?? null) ? strtolower($data['email']) : null,
+            'messenger_username' => $username,
+        ];
     }
 }

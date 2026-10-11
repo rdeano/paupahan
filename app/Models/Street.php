@@ -26,9 +26,13 @@ class Street extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /** Approved streets, plus pending ones the given user suggested. */
+    /** Approved streets, plus pending ones the given user suggested. Admins see every street. */
     public function scopeVisibleTo(Builder $query, ?User $user): void
     {
+        if ($user?->isAdmin()) {
+            return;
+        }
+
         $query->where(fn (Builder $q) => $q
             ->where('status', self::APPROVED)
             ->when($user, fn (Builder $q) => $q->orWhere('created_by', $user->id)));

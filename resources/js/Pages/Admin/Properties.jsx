@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Button, Chip, Link as MuiLink, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import { Button, Chip, Link as MuiLink, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import WorkspaceLayout from '../../Layouts/WorkspaceLayout';
 import AdminSearch from '../../Components/AdminSearch';
 import Paginator from '../../Components/Paginator';
@@ -21,7 +22,10 @@ export default function Properties({ properties, filters }) {
     return (
         <WorkspaceLayout>
             <Head title="Listings" />
-            <Typography variant="h2" sx={{ mb: 2 }}>Listings</Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <Typography variant="h2">Listings</Typography>
+                <Button variant="contained" startIcon={<AddIcon />} component={Link} href={route('admin.properties.create')}>Add listing</Button>
+            </Stack>
             <AdminSearch routeName="admin.properties.index" value={filters.q} placeholder="Title or owner name" />
 
             <TableContainer component={Paper} variant="outlined">
@@ -45,6 +49,7 @@ export default function Properties({ properties, filters }) {
                                 <TableCell align="right">{formatPrice(property.price_monthly)}</TableCell>
                                 <TableCell><Chip size="small" label={property.status_label} /></TableCell>
                                 <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                                    <Button size="small" component={Link} href={route('admin.properties.edit', property.slug)}>Edit</Button>
                                     {property.status !== 'archived' && <Button size="small" onClick={() => unpublish(property)}>Unpublish</Button>}
                                     <Button size="small" color="error" onClick={() => remove(property)}>Remove</Button>
                                 </TableCell>

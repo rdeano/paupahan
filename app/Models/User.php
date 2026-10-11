@@ -44,7 +44,23 @@ class User extends Authenticatable
             'role' => UserRole::class,
             'status' => UserStatus::class,
             'show_phone' => 'boolean',
+            'added_by_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * Create an owner on behalf of someone who hasn't registered. They count as verified because an
+     * admin vouches for them, and are shown as "Posted by Admin". Without an email they can't log in;
+     * once one is added they can set a password via "Forgot password".
+     */
+    public static function onboardOwner(array $attributes): self
+    {
+        $owner = new self($attributes);
+        $owner->email_verified_at = now();
+        $owner->added_by_admin = true;
+        $owner->save();
+
+        return $owner;
     }
 
     /** @return HasMany<Property, $this> */
@@ -98,6 +114,7 @@ class User extends Authenticatable
             'messenger_url' => $this->messengerUrl(),
             'phone' => $this->show_phone ? $this->phone : null,
             'verified' => $this->hasVerifiedEmail(),
+            'added_by_admin' => $this->added_by_admin,
             'member_since' => $this->created_at?->format('F Y'),
         ];
     }

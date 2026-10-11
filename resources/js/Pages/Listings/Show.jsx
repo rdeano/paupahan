@@ -12,6 +12,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import CheckIcon from '@mui/icons-material/Check';
 import PublicLayout from '../../Layouts/PublicLayout';
 import VerifiedChip from '../../Components/VerifiedChip';
+import ApproximateLocationMap from '../../Components/Map/ApproximateLocationMap';
 import { formatPrice, plural } from '../../utils';
 
 function Gallery({ photos, title }) {
@@ -77,7 +78,7 @@ function Fact({ label, value }) {
     );
 }
 
-export default function Show({ listing, preview, canEdit }) {
+export default function Show({ listing, preview, editUrl }) {
     const owner = listing.owner;
 
     return (
@@ -91,8 +92,8 @@ export default function Show({ listing, preview, canEdit }) {
                         Preview: this listing is not visible to the public ({listing.status_label}).
                     </Alert>
                 )}
-                {canEdit && (
-                    <Button component={Link} href={route('owner.properties.edit', listing.slug)} variant="outlined" sx={{ mb: 2 }}>
+                {editUrl && (
+                    <Button component={Link} href={editUrl} variant="outlined" sx={{ mb: 2 }}>
                         Edit this listing
                     </Button>
                 )}
@@ -151,6 +152,17 @@ export default function Show({ listing, preview, canEdit }) {
                                 <Typography sx={{ whiteSpace: 'pre-line' }}>{listing.house_rules}</Typography>
                             </>
                         )}
+
+                        {listing.location && (
+                            <>
+                                <Divider sx={{ my: 3 }} />
+                                <Typography variant="h3" gutterBottom>Location</Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    The place is within the shaded area. Ask the owner for the exact address when you arrange a viewing.
+                                </Typography>
+                                <ApproximateLocationMap location={listing.location} radius={listing.location_radius} />
+                            </>
+                        )}
                     </Grid>
 
                     <Grid size={{ xs: 12, md: 4 }}>
@@ -164,9 +176,9 @@ export default function Show({ listing, preview, canEdit }) {
                                 <Typography variant="caption" color="text.secondary">Posted by</Typography>
                                 <Stack direction="row" spacing={1} alignItems="center">
                                     <Typography fontWeight={600}>
-                                        <Link href={route('owners.show', owner.id)}>{owner.name}</Link>
+                                        {owner.id ? <Link href={route('owners.show', owner.id)}>{owner.name}</Link> : owner.name}
                                     </Typography>
-                                    <VerifiedChip verified={owner.verified} />
+                                    <VerifiedChip verified={owner.verified} addedByAdmin={owner.added_by_admin} />
                                 </Stack>
                                 {owner.member_since && <Typography variant="body2" color="text.secondary">Member since {owner.member_since}</Typography>}
 

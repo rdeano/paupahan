@@ -7,9 +7,15 @@ use App\Models\User;
 
 /**
  * Tenant isolation: an owner may only manage their own properties.
+ * Platform admins may manage any property on an owner's behalf.
  */
 class PropertyPolicy
 {
+    public function before(User $user): ?bool
+    {
+        return $user->isAdmin() ? true : null;
+    }
+
     public function view(User $user, Property $property): bool
     {
         return $user->id === $property->owner_id;

@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
     'title', 'type', 'description', 'price_monthly', 'deposit_months', 'advance_months',
     'min_stay_months', 'bedrooms', 'bathrooms', 'floor_area_sqm', 'max_occupants',
     'barangay_id', 'street_id', 'house_number', 'landmark', 'latitude', 'longitude',
-    'house_rules', 'status', 'available_from',
+    'house_rules', 'status', 'available_from', 'contact_name', 'contact_messenger', 'contact_phone',
 ])]
 class Property extends Model
 {
@@ -37,6 +37,42 @@ class Property extends Model
             'published_at' => 'datetime',
             'latitude' => 'float',
             'longitude' => 'float',
+            'approx_latitude' => 'float',
+            'approx_longitude' => 'float',
+        ];
+    }
+
+    /** How far, in metres, the public map position may be from the real pin. */
+    public const APPROX_MIN_METRES = 100;
+
+    public const APPROX_MAX_METRES = 250;
+
+    /** Radius, in metres, of the "approximate location" circle shown to renters. */
+    public const APPROX_RADIUS_METRES = 300;
+
+    /** Move the private pin a random distance in a random direction, for showing on public maps. */
+    public function refreshApproximateLocation(): void
+    {
+        if ($this->latitude === null || $this->longitude === null) {
+            $this->approx_latitude = $this->approx_longitude = null;
+
+            return;
+        }
+
+        $distance = random_int(self::APPROX_MIN_METRES, self::APPROX_MAX_METRES);
+        $bearing = deg2rad(random_int(0, 359));
+        $metresPerDegree = 111_320;
+
+        $this->approx_latitude = round($this->latitude + ($distance * cos($bearing)) / $metresPerDegree, 7);
+        $this->approx_longitude = round($this->longitude + ($distance * sin($bearing)) / ($metresPerDegree * cos(deg2rad($this->latitude))), 7);
+    }
+
+    /** Approximate position for public maps, or null when the listing has no pin. */
+    public function publicLocation(): ?array
+    {
+        return $this->approx_latitude === null ? null : [
+            'lat' => $this->approx_latitude,
+            'lng' => $this->approx_longitude,
         ];
     }
 
@@ -95,7 +131,8 @@ class Property extends Model
     }
 
     /**
-     * Apply public search filters.
+     * Apply public search filters. When the typed text was found on the map, `near` holds an area
+     * around that place, and listings in it match too even if their text doesn't.
      *
      * @param  array<string, mixed>  $filters
      */
@@ -103,16 +140,29 @@ class Property extends Model
     {
         // Every word must match somewhere: title, landmark, street, barangay or district.
         $text = str_replace(['%', '_', '\\'], ' ', (string) ($filters['q'] ?? ''));
-        $words = array_filter(preg_split('/\s+/', trim($text)));
-        foreach (array_slice($words, 0, 6) as $word) {
-            $like = '%'.$word.'%';
+        $words = array_slice(array_filter(preg_split('/\s+/', trim($text))), 0, 6);
+        $matchesText = function (Builder $query) use ($words) {
+            foreach ($words as $word) {
+                $like = '%'.$word.'%';
+                $query->where(fn (Builder $q) => $q
+                    ->where('title', 'like', $like)
+                    ->orWhere('landmark', 'like', $like)
+                    ->orWhereHas('street', fn (Builder $s) => $s->where('name', 'like', $like))
+                    ->orWhereHas('barangay', fn (Builder $b) => $b
+                        ->where('name', 'like', $like)
+                        ->orWhereHas('district', fn (Builder $d) => $d->where('name', 'like', $like))));
+            }
+        };
+
+        if ($words && isset($filters['near'])) {
+            $near = $filters['near'];
             $query->where(fn (Builder $q) => $q
-                ->where('title', 'like', $like)
-                ->orWhere('landmark', 'like', $like)
-                ->orWhereHas('street', fn (Builder $s) => $s->where('name', 'like', $like))
-                ->orWhereHas('barangay', fn (Builder $b) => $b
-                    ->where('name', 'like', $like)
-                    ->orWhereHas('district', fn (Builder $d) => $d->where('name', 'like', $like))));
+                ->where($matchesText)
+                ->orWhere(fn (Builder $q) => $q
+                    ->whereBetween('approx_latitude', [$near['south'], $near['north']])
+                    ->whereBetween('approx_longitude', [$near['west'], $near['east']])));
+        } elseif ($words) {
+            $query->where($matchesText);
         }
 
         $query
@@ -122,7 +172,11 @@ class Property extends Model
             ->when($filters['type'] ?? null, fn (Builder $q, $type) => $q->where('type', $type))
             ->when($filters['min_price'] ?? null, fn (Builder $q, $min) => $q->where('price_monthly', '>=', $min))
             ->when($filters['max_price'] ?? null, fn (Builder $q, $max) => $q->where('price_monthly', '<=', $max))
-            ->when($filters['bedrooms'] ?? null, fn (Builder $q, $n) => $q->where('bedrooms', '>=', $n));
+            ->when($filters['bedrooms'] ?? null, fn (Builder $q, $n) => $q->where('bedrooms', '>=', $n))
+            // "Search this area" on the map: only the approximate position is ever queried.
+            ->when(isset($filters['north'], $filters['south'], $filters['east'], $filters['west']), fn (Builder $q) => $q
+                ->whereBetween('approx_latitude', [$filters['south'], $filters['north']])
+                ->whereBetween('approx_longitude', [$filters['west'], $filters['east']]));
 
         foreach ((array) ($filters['amenities'] ?? []) as $amenityId) {
             $query->whereHas('amenities', fn (Builder $q) => $q->where('amenities.id', $amenityId));
@@ -146,6 +200,30 @@ class Property extends Model
         ])->filter()->implode(', ');
     }
 
+    /** Whether an admin posted this listing with its own contact details rather than an owner's account. */
+    public function postedByAdmin(): bool
+    {
+        return filled($this->contact_name);
+    }
+
+    /** Who renters contact about this listing: the listing's own contact, or else its owner. */
+    public function publicContact(): array
+    {
+        if (! $this->postedByAdmin()) {
+            return $this->owner->toPublicArray();
+        }
+
+        return [
+            'id' => null,
+            'name' => $this->contact_name,
+            'messenger_url' => $this->contact_messenger ? 'https://m.me/'.$this->contact_messenger : null,
+            'phone' => $this->contact_phone,
+            'verified' => false,
+            'added_by_admin' => true,
+            'member_since' => null,
+        ];
+    }
+
     /** Data for listing cards. */
     public function toCard(): array
     {
@@ -162,6 +240,7 @@ class Property extends Model
             'address' => $this->publicAddress(),
             'landmark' => $this->landmark,
             'cover_url' => $this->coverPhoto?->toFrontend()['thumb_url'],
+            'location' => $this->publicLocation(),
         ];
     }
 
@@ -172,6 +251,10 @@ class Property extends Model
         });
 
         static::saving(function (Property $property) {
+            if ($property->isDirty(['latitude', 'longitude'])) {
+                $property->refreshApproximateLocation();
+            }
+
             if ($property->status !== PropertyStatus::Draft && $property->published_at === null) {
                 $property->published_at = now();
             }

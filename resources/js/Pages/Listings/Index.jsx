@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import {
-    Box, Button, Card, CardContent, Checkbox, Collapse, Container, FormControl, FormControlLabel, FormGroup,
-    Grid2 as Grid, InputAdornment, InputLabel, MenuItem, Select, Stack, TextField, Typography, useMediaQuery,
+    Box, Button, Card, CardContent, Checkbox, Chip, Collapse, Container, FormControl, FormControlLabel, FormGroup,
+    Grid2 as Grid, InputAdornment, InputLabel, MenuItem, Select, Stack, TextField, ToggleButton, ToggleButtonGroup,
+    Typography, useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import TuneIcon from '@mui/icons-material/Tune';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
+import ListingsMap from '../../Components/Map/ListingsMap';
 import PublicLayout from '../../Layouts/PublicLayout';
 import ListingCard from '../../Components/ListingCard';
 import Paginator from '../../Components/Paginator';
 import BarangayPicker from '../../Components/BarangayPicker';
 import { cleanQuery } from '../../utils';
 
-const EMPTY = { q: '', district: '', barangay: '', type: '', min_price: '', max_price: '', bedrooms: '', amenities: [], sort: 'newest' };
+const NO_AREA = { north: '', south: '', east: '', west: '' };
+const EMPTY = {
+    q: '', district: '', barangay: '', type: '', min_price: '', max_price: '', bedrooms: '', amenities: [], sort: 'newest',
+    view: 'map', ...NO_AREA,
+};
 
 function initialFilters(filters) {
     return {
@@ -25,11 +33,17 @@ function initialFilters(filters) {
     };
 }
 
-export default function Index({ listings, filters, options }) {
+export default function Index({ listings, mapListings, place, filters, options }) {
     const theme = useTheme();
     const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
     const [form, setForm] = useState(() => initialFilters(filters));
     const [showFilters, setShowFilters] = useState(false);
+    const area = filters.north !== undefined
+        ? { north: Number(filters.north), south: Number(filters.south), east: Number(filters.east), west: Number(filters.west) }
+        : null;
+    // Changes whenever a new search is applied; the map then moves to the results. View, sort and area don't count.
+    const { view, sort, north, south, east, west, ...searched } = filters;
+    const searchKey = JSON.stringify(searched);
 
     const set = (key) => (event) => setForm((f) => ({ ...f, [key]: event.target.value }));
 
@@ -42,9 +56,22 @@ export default function Index({ listings, filters, options }) {
         search();
     };
 
+    // Searching for an address starts fresh from any map area, so the map can move to the results.
+    const submitAddress = (event) => {
+        event.preventDefault();
+        update(NO_AREA);
+    };
+
     const reset = () => {
-        setForm(EMPTY);
-        search(EMPTY);
+        const next = { ...EMPTY, view: form.view };
+        setForm(next);
+        search(next);
+    };
+
+    const update = (changes) => {
+        const next = { ...form, ...changes };
+        setForm(next);
+        search(next);
     };
 
     const toggleAmenity = (id) =>
@@ -122,7 +149,7 @@ export default function Index({ listings, filters, options }) {
                 <Container>
                     <Typography variant="h1" gutterBottom>Find a place to rent in Davao City</Typography>
                     <Typography sx={{ opacity: 0.9, mb: 3 }}>Apartments, boarding houses, condos, rooms and bedspaces, posted by owners.</Typography>
-                    <Box component="form" onSubmit={submit} sx={{ display: 'flex', gap: 1, bgcolor: 'background.paper', p: 1, borderRadius: 2 }}>
+                    <Box component="form" onSubmit={submitAddress} sx={{ display: 'flex', gap: 1, bgcolor: 'background.paper', p: 1, borderRadius: 2 }}>
                         <TextField
                             size="small"
                             placeholder="Street, barangay, landmark (e.g. Matina, near Ateneo)"
@@ -152,27 +179,55 @@ export default function Index({ listings, filters, options }) {
                         </Grid>
 
                         <Grid size={{ xs: 12, md: 9 }}>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                                <Typography color="text.secondary">
-                                    {listings.total} {listings.total === 1 ? 'place' : 'places'} found
-                                </Typography>
-                                <FormControl size="small" sx={{ minWidth: 170 }}>
-                                    <Select
-                                        value={form.sort}
-                                        onChange={(e) => {
-                                            const next = { ...form, sort: e.target.value };
-                                            setForm(next);
-                                            search(next);
-                                        }}
-                                    >
-                                        <MenuItem value="newest">Newest first</MenuItem>
-                                        <MenuItem value="price_asc">Price: low to high</MenuItem>
-                                        <MenuItem value="price_desc">Price: high to low</MenuItem>
-                                    </Select>
-                                </FormControl>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap spacing={1} sx={{ mb: 2 }}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <Typography color="text.secondary">
+                                        {listings.total} {listings.total === 1 ? 'place' : 'places'} found
+                                    </Typography>
+                                    {area && <Chip size="small" label="In map area" onDelete={() => update(NO_AREA)} />}
+                                </Stack>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                    <ToggleButtonGroup size="small" exclusive value={form.view} onChange={(_, view) => view && update({ view })}>
+                                        <ToggleButton value="map" aria-label="Map view"><MapOutlinedIcon fontSize="small" sx={{ mr: 0.5 }} />Map</ToggleButton>
+                                        <ToggleButton value="list" aria-label="List view"><ViewListIcon fontSize="small" sx={{ mr: 0.5 }} />List</ToggleButton>
+                                    </ToggleButtonGroup>
+                                    <FormControl size="small" sx={{ minWidth: 170 }}>
+                                        <Select
+                                            value={form.sort}
+                                            onChange={(e) => update({ sort: e.target.value })}
+                                        >
+                                            <MenuItem value="newest">Newest first</MenuItem>
+                                            <MenuItem value="price_asc">Price: low to high</MenuItem>
+                                            <MenuItem value="price_desc">Price: high to low</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
                             </Stack>
 
-                            {listings.data.length === 0 ? (
+                            {form.view === 'map' && (
+                                <Box sx={{ mb: 3 }}>
+                                    <ListingsMap
+                                        listings={mapListings}
+                                        area={area}
+                                        place={place}
+                                        searchKey={searchKey}
+                                        onSearchArea={(bounds) => update({ ...bounds, q: '' })}
+                                        height={isDesktop ? 520 : 400}
+                                    />
+                                    <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5 }}>
+                                        Pins show the approximate area, not the exact address. Places without a map pin are only in the list below.
+                                    </Typography>
+                                </Box>
+                            )}
+
+                            {listings.data.length === 0 && place ? (
+                                <Card>
+                                    <CardContent sx={{ textAlign: 'center', py: 6 }}>
+                                        <Typography variant="h3" gutterBottom>Nothing for rent near &ldquo;{filters.q}&rdquo; yet</Typography>
+                                        <Typography color="text.secondary">Move the map to look around, then tap &ldquo;Search this area&rdquo;.</Typography>
+                                    </CardContent>
+                                </Card>
+                            ) : listings.data.length === 0 ? (
                                 <Card>
                                     <CardContent sx={{ textAlign: 'center', py: 6 }}>
                                         <Typography variant="h3" gutterBottom>No places match your search</Typography>
