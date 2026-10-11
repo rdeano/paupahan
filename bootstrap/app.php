@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // The site sits behind Cloudflare (and nginx), which receive HTTPS and forward plain HTTP.
+        // Trust their X-Forwarded-* headers so Laravel builds https:// links instead of http://.
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
             EnsureAccountIsActive::class,
